@@ -21,8 +21,8 @@ def load_algorithms():
 def on_typing(event, combobox, original_algorithms):
     typed_text = combobox.get().lower()
 
-    # Filter the list based on the typed text (case-insensitive match)
-    filtered_algorithms = [algo[0] for algo in original_algorithms if typed_text in algo[0].lower()]
+    # Filter the list based on whether it starts with the typed text (case-insensitive match)
+    filtered_algorithms = [algo[0] for algo in original_algorithms if algo[0].lower().startswith(typed_text)]
 
     # Update the combobox's values with the filtered list
     combobox.configure(values=filtered_algorithms)
@@ -31,7 +31,7 @@ def on_typing(event, combobox, original_algorithms):
     if not filtered_algorithms:
         combobox.set('')
 
-    # Focus on combobox after typing
+    # Ensure the combobox remains focused after typing
     combobox.focus_set()
 
 
@@ -39,10 +39,52 @@ def on_typing(event, combobox, original_algorithms):
 def create_window():
     root = ctk.CTk()
     root.title("HashCrackLab")
-    root.geometry("900x600")
+    root.geometry("800x850")
     root.config(bg="#2E3B4E")
 
     return root
+
+
+# Attack Modes
+# Attack Modes
+def create_attack_mode_widgets(parent_frame):
+    """
+    Creates the attack mode selection widgets.
+    Only the "Straight" mode is enabled by default.
+    Centers the checkboxes in the parent frame.
+    """
+    attack_mode_label = ctk.CTkLabel(parent_frame, text="Select Attack Mode:", font=("Arial", 14, "bold"))
+    attack_mode_label.pack(pady=(20, 10))
+
+    # Dictionary of attack modes with their descriptions and IDs
+    attack_modes = {
+        0: "Straight",
+        1: "Combination",
+        3: "Brute-force",
+        6: "Hybrid Wordlist + Mask",
+        7: "Hybrid Mask + Wordlist",
+    }
+
+    # Frame to hold the checkboxes, centered in the parent
+    attack_mode_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
+    attack_mode_frame.pack(pady=10, fill="both", expand=True)
+
+    # Dictionary to store checkbox variables for each mode
+    attack_mode_vars = {}
+
+    for mode_id, description in attack_modes.items():
+        var = ctk.BooleanVar(value=(mode_id == 0))  # Enable only "Straight" (ID 0) by default
+        checkbox = ctk.CTkCheckBox(
+            attack_mode_frame,
+            text=f"{mode_id} | {description}",
+            variable=var,
+            state="normal" if mode_id == 0 else "disabled",  # Disable all except "Straight"
+            font=("Arial", 12),
+        )
+        checkbox.pack(anchor="center", pady=5)  # Center-align checkboxes
+        attack_mode_vars[mode_id] = var
+
+    return attack_mode_vars
 
 
 def create_widgets(root, original_algorithms):
@@ -126,7 +168,7 @@ def create_widgets(root, original_algorithms):
     hash_entry.pack(pady=10)
 
     # Wordlist input
-    wordlist_label = ctk.CTkLabel(main_frame, text="Enter Wordlist Path (Default: rockyou.txt):", font=("Arial", 12))
+    wordlist_label = ctk.CTkLabel(main_frame, text="Enter Wordlist Path:", font=("Arial", 12))
     wordlist_label.pack(pady=10)
 
     wordlist_entry = ctk.CTkEntry(
@@ -135,7 +177,6 @@ def create_widgets(root, original_algorithms):
         placeholder_text="Wordlist path",
         font=("Arial", 12),
     )
-    wordlist_entry.insert(0, "assets/rockyou.txt")
     wordlist_entry.pack(pady=10)
 
     # Algorithm selection
@@ -148,22 +189,11 @@ def create_widgets(root, original_algorithms):
     algorithm_combobox.set("")
     algorithm_combobox.pack(pady=10)
 
+    algorithm_combobox.bind('<KeyRelease>', lambda event: on_typing(event, algorithm_combobox, original_algorithms))
+
     # Cracking mode
-    mode_label = ctk.CTkLabel(main_frame, text="Select Cracking Mode:", font=("Arial", 12))
-    mode_label.pack(pady=10)
-
-    mode_var = ctk.StringVar(value="Dictionary")
-    mode_dictionary = ctk.CTkRadioButton(
-        main_frame, text="Dictionary Attack", variable=mode_var, value="Dictionary", font=("Arial", 12)
-    )
-    mode_bruteforce = ctk.CTkRadioButton(
-        main_frame, text="Brute-Force Attack", variable=mode_var, value="Bruteforce", font=("Arial", 12)
-    )
-    mode_mask = ctk.CTkRadioButton(main_frame, text="Mask Attack", variable=mode_var, value="Mask", font=("Arial", 12))
-
-    mode_dictionary.pack(pady=5)
-    mode_bruteforce.pack(pady=5)
-    mode_mask.pack(pady=5)
+    attack_mode_vars = create_attack_mode_widgets(main_frame)
+    mode_var = attack_mode_vars[0]
 
     # Start cracking button
     start_button = ctk.CTkButton(
